@@ -57,6 +57,24 @@ preform print <scene> --printer Form4-3XK2 --name "Bracket x4" --now
 
 `--printer` on `print` takes a printer name, serial or IP address. Without `--now` the job uploads to the printer's queue and waits for a start on the touchscreen.
 
+## Emulated printers
+
+PreFormServer prepares jobs but has no printer to run them, and its built-in virtual printers accept uploads without ever progressing. `preform emu serve` runs a fleet of emulated printers with a print-run state machine so a job can be queued, printed layer by layer on a simulation clock, finished or failed, and its resin or powder drawn down:
+
+```bash
+preform emu serve --printers "Form 4,Form 4,Fuse 1+" --speed 120 --fail-rate 0.1
+preform print <scene> --printer emu:Form4-EMU1 --name "Bracket x4"
+preform emu runs --status printing
+preform emu run <run id>
+preform emu events --since 0
+```
+
+`print --printer emu:<serial>` reads the scene's layer count, material usage and settings from PreFormServer, asks it for the estimate, saves the `.form` (to `--out` or `~/.preform/jobs/`), and posts the job to the emulator. The emulator checks the printer's machine type and loaded material, queues one run at a time per printer, advances `progress` and `layer` from the estimate as simulated seconds pass (`--speed 60` means one real second is one simulated minute; `--speed 0` advances only through `preform emu tick <seconds>`), draws cartridge, tank or powder by `material_usage.volume_ml`, and logs an event at queue, start, every ten percent of layers, and the end. Runs fail with a code when a cartridge or powder runs out, when the tank life is exceeded, at `--fail-at-layer`, or at random with `--fail-rate`. `preform emu abort <run>` stops a queued or printing run.
+
+Presets: `Form 4`, `Form 4B`, `Form 4L`, `Form 3`, `Fuse 1+`. Serials are `<preset>-EMU<n>`. State is one SQLite file (`--db`, default `~/.preform/emu.db`) and survives restarts; run `emu serve` without `--printers` to reopen it. The clock ticks once a second, so a run's `actual_s` lands within one tick of its estimate at the chosen speed.
+
+Live check on 2026-09-22: the 20 mm cube (265 layers, 9.478 ml) queued on an emulated Form 4 at 120x, printed in 26 real seconds, finished with the cartridge at 9.478 ml dispensed and 13 events logged.
+
 ## Anything else in the API
 
 ```bash
@@ -65,7 +83,7 @@ preform api POST /scene/<id>/hollow/ '{"models":"ALL","wall_thickness_mm":2}'
 preform api DELETE /scene/<id>/
 ```
 
-`api` sends any method and path with an optional JSON body and prints the response. Long operations run asynchronously: the CLI submits with `?async=true` and polls `/operations/<id>/` until the job succeeds or fails. `--no-wait` returns the operation id instead, and `preform op get <id>` reads it later.
+`api` sends any method and path with an optional JSON body to PreFormServer and prints the response. Long operations run asynchronously: the CLI submits with `?async=true` and polls `/operations/<id>/` until the job succeeds or fails. `--no-wait` returns the operation id instead, and `preform op get <id>` reads it later.
 
 ## Server
 

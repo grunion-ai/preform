@@ -4,6 +4,9 @@ import { createClient, PreFormError } from '../lib/client.mjs';
 import { commands } from '../lib/commands.mjs';
 import { findServer, startServer, reachable } from '../lib/server.mjs';
 
+process.removeAllListeners('warning');
+process.on('warning', (w) => { if (w.name !== 'ExperimentalWarning') console.error(w); });
+
 const { cmd, args, flags } = parse(process.argv.slice(2));
 const url = flags.url ?? process.env.PREFORM_URL ?? 'http://localhost:44388';
 const log = (s) => process.stderr.write(s + '\n');
@@ -18,6 +21,18 @@ if (cmd === 'serve') {
   const stop = () => child.kill();
   process.on('SIGINT', stop); process.on('SIGTERM', stop);
   child.on('exit', (c) => process.exit(c ?? 0));
+} else if (cmd === 'emu serve') {
+  const { startEmulatorServer } = await import('../lib/emu-server.mjs');
+  const srv = await startEmulatorServer({
+    port: Number(flags.port ?? 44389), db: flags.db, speed: Number(flags.speed ?? 60), failRate: Number(flags['fail-rate'] ?? 0), failAtLayer: Number(flags['fail-at-layer'] ?? 0),
+    printers: flags.printers ? String(flags.printers).split(',').map((s) => s.trim()) : (flags.db || !flags.printers ? undefined : ['Form 4']), log,
+  });
+  const stop = async () => { await srv.close(); process.exit(0); };
+  process.on('SIGINT', stop); process.on('SIGTERM', stop);
+  await new Promise(() => {});
+} else if (cmd.startsWith('emu ') && commands[cmd]) {
+  try { console.log(JSON.stringify(await commands[cmd]({ flags, log }, args), null, flags.json ? 0 : 2)); }
+  catch (e) { log(e.code ? `${e.code}: ${e.message}` : e.message); process.exitCode = 1; }
 } else if (!commands[cmd]) {
   log(`unknown command: ${cmd}\n\n${usage()}`);
   process.exit(2);
