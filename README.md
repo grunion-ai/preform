@@ -10,7 +10,15 @@ Node 20 or newer. No dependencies.
 npm install -g @grunion-ai/preform
 ```
 
-PreFormServer ships separately from Formlabs: download it from the [Formlabs API downloads page](https://support.formlabs.com/s/article/Formlabs-API) and put `PreFormServer.app` in `/Applications` (macOS) or `PreFormServer\PreFormServer.exe` under Program Files (Windows). Any other location works through `PREFORM_SERVER=/path/to/PreFormServer`.
+PreFormServer ships separately from Formlabs. The installer fetches the newest build for this machine from the [Formlabs API downloads page](https://formlabs.com/support/Formlabs-API-downloads-and-release-notes), checks the Developer ID signature (Formlabs Inc., team KVPE3R79SR) and installs it:
+
+```bash
+npx --package @grunion-ai/preform preform-install
+```
+
+From a checkout: `node scripts/install-preformserver.mjs [--dest /Applications] [--version 3.63.0] [--force]`. Any other location works through `PREFORM_SERVER=/path/to/PreFormServer`. Verified with PreFormServer 3.63.0 (API 0.9.30, Apple Silicon build) on 2026-09-22: `prep` on a 20 mm cube for Form 4 Black V5 at 0.1 mm returns a 2,766 s estimate and a 240 KB `.form` in about 3 s.
+
+PreFormServer lists thirteen built-in virtual printers (`preform devices`, `connection_type` `VIRTUAL`, addresses in 192.0.2.0/24). `preform print <scene> --printer "Form 4"` uploads to one and returns a job id, which makes them a stand-in for a real printer in scripts and tests.
 
 ## Prepare a job in one command
 
@@ -77,7 +85,7 @@ Every command prints JSON to stdout, pretty by default and single-line with `--j
 npm test
 ```
 
-Tests run against a fake PreFormServer in-process, so they need no Formlabs software installed. The Local API spec these commands follow is `formlabs-api-local-openapi.yaml` version 0.9.22 in the Formlabs repository.
+Tests run against a fake PreFormServer in-process, so they need no Formlabs software installed. `node scripts/make-cube.mjs` regenerates the STL fixture. The Local API spec these commands follow is `formlabs-api-local-openapi.yaml` version 0.9.22 in the Formlabs repository; PreFormServer 3.63.0 reports API 0.9.30 and does not serve its spec over HTTP, so field names come from the 0.9.22 file plus live responses.
 
 ## License
 
