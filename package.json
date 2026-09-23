@@ -1,0 +1,13 @@
+{
+  "name": "@grunion-ai/preform",
+  "version": "0.1.0",
+  "description": "Command line for Formlabs PreForm: prep, validate, estimate, save and print jobs through the Formlabs Local API (PreFormServer)",
+  "type": "module",
+  "bin": { "preform": "bin/preform.mjs" },
+  "files": ["bin", "lib"],
+  "engines": { "node": ">=20" },
+  "scripts": { "test": "node --test" },
+  "repository": { "type": "git", "url": "git+https://github.com/grunion-ai/preform.git" },
+  "keywords": ["formlabs", "preform", "3d-printing", "sla", "sls", "cli"],
+  "license": "MIT"
+}

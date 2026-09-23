@@ -1,0 +1,4 @@
+node_modules/
+*.form
+*.log
+.DS_Store
